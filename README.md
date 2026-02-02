@@ -18,3 +18,24 @@ View your app in AI Studio: https://ai.studio/apps/drive/1S_Pj6_ziER9ClRCzP7qdx3
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+## Run with Docker (local)
+
+**Prerequisites:** Docker Desktop (Linux containers) + Docker Compose
+
+1. Create a local env file:
+   - Copy `.env.example` to `.env`
+   - Set `GEMINI_API_KEY`
+   - (Optional) Set `TELEGRAM_BOT_TOKEN` to enable Telegram sync
+2. Start:
+   - `docker compose up -d --build`
+3. Open:
+   - `http://localhost:3000`
+
+### Telegram sync
+
+- **Bot runs on the server** (not in the browser), so thoughts sent in Telegram will be saved to Postgres even if the browser is closed.
+- To link Telegram to the browser: send **`/id`** to the bot and paste the returned **`userId`** into the app settings.
+- Voice messages are saved as `VOICE` thoughts (transcription can be added next).
+
+> Note: `GEMINI_API_KEY` is injected into the client bundle in this app, so treat it as a local/dev key.

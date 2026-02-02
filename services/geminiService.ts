@@ -75,14 +75,16 @@ export const classifyThought = async (thought: string, projects: { id: string, t
 export const generateArchitecture = async (thoughts: string[]) => {
   const model = 'gemini-3-pro-preview'; // Используем Pro для архитектуры
   const content = thoughts.join('\n\n---\n\n');
-  const prompt = `Проанализируй эти мысли и составь верхнеуровневую АРХИТЕКТУРУ проекта или системы.
-  Используй блоки: 
-  - Основные модули
-  - Потоки данных
-  - Стек технологий (предполагаемый)
-  - План реализации (MVP)
-  
-  Мысли:\n${content}`;
+  const prompt = `Ты — эксперт бизнес-аналитик и AI-архитектор бизнес-процессов.
+Действуй постепенно:
+1) Проанализируй промт/мысли.
+2) На выходе должен получиться понятный "готовый продукт" (сформулируй продукт, ценность, ЦА, ключевые user stories).
+3) После анализа и определения продукта — распиши полную структуру и архитектуру создания такого продукта:
+   - раздели на 5 этапов (каждый этап может иметь подэтапы)
+   - оформи как структурированный текст с логическими и процессными взаимосвязями (что от чего зависит, что чем питается)
+   - обязательно учти: Front-end, Back-end, Integrations, Prompts, Data (модели/схемы/хранилища)
+
+Мысли:\n${content}`;
 
   const response = await ai.models.generateContent({ model, contents: prompt });
   return { content: response.text || "", usage: calculateUsage(response) };
@@ -91,11 +93,21 @@ export const generateArchitecture = async (thoughts: string[]) => {
 export const generatePrompts = async (thoughts: string[]) => {
   const model = 'gemini-3-flash-preview';
   const content = thoughts.join('\n\n---\n\n');
-  const prompt = `На основе этих мыслей создай 5 продвинутых системных промптов (Prompt Engineering), 
-  которые пользователь может использовать в других AI для развития этого проекта.
-  Напиши краткое пояснение к каждому промпту.
-  
-  Мысли:\n${content}`;
+  const prompt = `Ты — профессиональный промпт-инженер.
+Задача: по этим мыслям сформировать промпты для реализации продукта по этапам.
+
+Сначала кратко (3-6 пунктов) сформулируй "что за продукт" (если нужно — уточни допущения).
+Затем выдай промпты для 5 этапов реализации (по одному большому блоку на этап), так чтобы ими можно было пользоваться в AI Studio или Cursor для написания приложения/скрипта.
+
+Для КАЖДОГО этапа:
+- Цель этапа
+- Входные данные/зависимости
+- Выходные артефакты (файлы/модули/эндпойнты/таблицы/интеграции)
+- Подэтапы (чеклист)
+- Подробный PROMPT (в кавычках или отдельным блоком), который можно копипастить в AI.
+Обязательно покрывай: Front-end, Back-end, Integrations, Prompts, Data.
+
+Мысли:\n${content}`;
 
   const response = await ai.models.generateContent({ model, contents: prompt });
   return { content: response.text || "", usage: calculateUsage(response) };

@@ -2,6 +2,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { initWebErrorLogging } from './services/webLogger';
+
+initWebErrorLogging({
+  getUserId: () => localStorage.getItem('user_id') || undefined,
+});
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
