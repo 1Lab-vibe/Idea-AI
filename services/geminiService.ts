@@ -28,6 +28,79 @@ const calculateUsage = (response: any): Usage => {
   };
 };
 
+export const generateProjectTitle = async (thoughts: string[]): Promise<string> => {
+  const model = 'gemini-3-flash-preview';
+  const content = thoughts.join('\n').slice(0, 1000);
+  const prompt = `На основе этих мыслей придумай ОЧЕНЬ короткое название проекта (2-3 слова). 
+  Ответь ТОЛЬКО названием, без кавычек и лишних слов.\n\nМысли:\n${content}`;
+
+  try {
+    const result = await ai.models.generateContent({
+      model,
+      contents: prompt,
+      config: { temperature: 0.5 }
+    });
+    return result.text?.trim() || "Без названия";
+  } catch (e) {
+    return "Новый поток";
+  }
+};
+
+export const classifyThought = async (thought: string, projects: { id: string, title: string }[]): Promise<string | 'UNCERTAIN' | 'NEW'> => {
+  if (projects.length === 0) return 'NEW';
+  
+  const model = 'gemini-3-flash-preview';
+  const projectList = projects.map(p => `ID: ${p.id}, Название: ${p.title}`).join('\n');
+  const prompt = `
+    У пользователя есть список проектов:
+    ${projectList}
+
+    Пришла новая мысль: "${thought}"
+
+    Определи, к какому проекту относится эта мысль. 
+    Ответь ТОЛЬКО ID проекта. 
+    Если мысль не подходит ни к одному проекту явно, ответь UNCERTAIN.
+    Если это явно запрос на создание нового направления, ответь NEW.
+  `;
+
+  try {
+    const result = await ai.models.generateContent({ model, contents: prompt });
+    const text = result.text?.trim() || 'UNCERTAIN';
+    return text;
+  } catch (e) {
+    return 'UNCERTAIN';
+  }
+};
+
+export const generateArchitecture = async (thoughts: string[]) => {
+  const model = 'gemini-3-pro-preview'; // Используем Pro для архитектуры
+  const content = thoughts.join('\n\n---\n\n');
+  const prompt = `Проанализируй эти мысли и составь верхнеуровневую АРХИТЕКТУРУ проекта или системы.
+  Используй блоки: 
+  - Основные модули
+  - Потоки данных
+  - Стек технологий (предполагаемый)
+  - План реализации (MVP)
+  
+  Мысли:\n${content}`;
+
+  const response = await ai.models.generateContent({ model, contents: prompt });
+  return { content: response.text || "", usage: calculateUsage(response) };
+};
+
+export const generatePrompts = async (thoughts: string[]) => {
+  const model = 'gemini-3-flash-preview';
+  const content = thoughts.join('\n\n---\n\n');
+  const prompt = `На основе этих мыслей создай 5 продвинутых системных промптов (Prompt Engineering), 
+  которые пользователь может использовать в других AI для развития этого проекта.
+  Напиши краткое пояснение к каждому промпту.
+  
+  Мысли:\n${content}`;
+
+  const response = await ai.models.generateContent({ model, contents: prompt });
+  return { content: response.text || "", usage: calculateUsage(response) };
+};
+
 export const processBatchAnalysis = async (
   thoughts: string[],
   detailLevel: SummaryDetailLevel = SummaryDetailLevel.DETAILED

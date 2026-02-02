@@ -19,6 +19,13 @@ export interface Usage {
   timestamp: Date;
 }
 
+export interface Thought {
+  id: string;
+  content: string;
+  timestamp: Date;
+  type: InputType;
+}
+
 export interface Message {
   id: string;
   conversationId: string;
@@ -26,21 +33,22 @@ export interface Message {
   content: string;
   timestamp: Date;
   usage?: Usage;
-  isBatchItem?: boolean;
+  isSummary?: boolean;
 }
 
-export interface Conversation {
+export interface Project {
   id: string;
   title: string;
   createdAt: Date;
   updatedAt: Date;
+  thoughts: Thought[];
   lastSummary?: string;
 }
 
 export interface BillingEntry {
   id: string;
   userId: string;
-  conversationId: string;
+  projectId: string;
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
