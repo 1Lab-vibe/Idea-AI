@@ -2,40 +2,162 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# Idea-AI — Конспектор мыслей
 
-This contains everything you need to run your app locally.
+AI-помощник, который структурирует поток идей в профессиональный конспект, выделяет задачи и помогает в развитии мыслей через интерактивный чат.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1S_Pj6_ziER9ClRCzP7qdx3QJnll2k97B
+**Web-интерфейс** + **Telegram-бот** с синхронизацией в PostgreSQL.
 
-## Run Locally
+---
 
-**Prerequisites:**  Node.js
+## Возможности
 
+### Веб-интерфейс
+- **Проекты** — создание, переименование
+- **Мысли** — текст и голос (VOICE), сохранение в БД
+- **Конспект** — AI-анализ проекта по мыслям
+- **Архитектура** — генерация структуры (FE/BE/Интеграции/Данные)
+- **Промпты** — AI-подсказки для развития проекта
+- **Синхронизация с Telegram** — привязка chat ID к проекту
+- **Копирование/перемещение** мыслей между проектами
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### Telegram-бот
+- **Текстовые и голосовые** сообщения (транскрипция через Gemini audio-multimodal)
+- **LLM-маршрутизация** — сообщения из чата с несколькими проектами направляются в нужный проект по контексту
+- **Префикс `проект и <Название>`** — явное указание проекта в начале сообщения
+- **Очередь сообщений** — обработка по одному в чате, без зависаний
 
-## Run with Docker (local)
+### Команды Telegram
+| Команда | Описание |
+|---------|----------|
+| `/start` | Приветствие и список команд |
+| `/id` | Показать userId для настройки в веб-приложении |
+| `/list` | Список привязанных проектов |
+| `/select_<projectId>` | Выбрать проект (для Inbox-режима) |
+| `/analyze` | Анализ текущего проекта |
+| `/arch` | Архитектура проекта |
+| `/prompts` | Промпты по проекту |
+| `/ask <вопрос>` | Вопрос по проекту |
+| `/mv_<projectId>` | Переместить последнюю мысль в указанный проект |
 
-**Prerequisites:** Docker Desktop (Linux containers) + Docker Compose
+---
 
-1. Create a local env file:
-   - Copy `.env.example` to `.env`
-   - Set `GEMINI_API_KEY`
-   - (Optional) Set `TELEGRAM_BOT_TOKEN` to enable Telegram sync
-2. Start:
-   - `docker compose up -d --build`
-3. Open:
-   - `http://localhost:3000`
+## Архитектура
 
-### Telegram sync
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   Web (Vite)    │────▶│  API (Express)  │────▶│   PostgreSQL    │
+│   :3000         │     │   :8787         │     │   :5432         │
+└─────────────────┘     └────────┬────────┘     └─────────────────┘
+                                 │
+                                 │  Polling
+                                 ▼
+                        ┌─────────────────┐
+                        │ Telegram Bot    │
+                        │ (Gemini AI)     │
+                        └─────────────────┘
+```
 
-- **Bot runs on the server** (not in the browser), so thoughts sent in Telegram will be saved to Postgres even if the browser is closed.
-- To link Telegram to the browser: send **`/id`** to the bot and paste the returned **`userId`** into the app settings.
-- Voice messages are saved as `VOICE` thoughts (transcription can be added next).
+- **Web** — React + Vite, UI для проектов и мыслей
+- **API** — Express, REST API, хранение в Postgres
+- **DB** — PostgreSQL (users, projects, thoughts, tg_links)
+- **Telegram** — серверный бот, Gemini для транскрипции голоса и LLM-логики
 
-> Note: `GEMINI_API_KEY` is injected into the client bundle in this app, so treat it as a local/dev key.
+---
+
+## Быстрый старт (Docker)
+
+**Требования:** Docker Desktop (Linux containers) + Docker Compose
+
+1. **Создайте `.env`** в корне проекта:
+   ```env
+   GEMINI_API_KEY=ваш_ключ_gemini
+   TELEGRAM_BOT_TOKEN=ваш_токен_бота
+   ```
+
+2. **Запустите:**
+   ```bash
+   docker compose up -d --build
+   ```
+
+3. **Откройте:** [http://localhost:3000](http://localhost:3000)
+
+### Порты
+| Сервис | Порт |
+|--------|------|
+| Web | 3000 |
+| API | 8787 |
+| PostgreSQL | 5432 |
+
+### Логи
+Ошибки пишутся в каталог `logs/`:
+- `telegram.log` — ошибки Telegram-бота
+- `web.log` — ошибки веб-клиента
+
+---
+
+## Ручная установка
+
+### Требования
+- Node.js 18+
+- PostgreSQL 16+
+
+### 1. Клонирование и зависимости
+```bash
+git clone https://github.com/1lab-vibe/idea-AI.git
+cd idea-AI
+npm install
+cd server && npm install && cd ..
+```
+
+### 2. База данных
+Создайте БД и выполните `server/db/init.sql`:
+```bash
+psql -U postgres -d idea_ai -f server/db/init.sql
+```
+
+### 3. Переменные окружения
+Создайте `.env` или `.env.local`:
+```env
+GEMINI_API_KEY=ваш_ключ
+TELEGRAM_BOT_TOKEN=токен_бота   # опционально
+```
+
+Для API (в `server/`):
+```env
+DATABASE_URL=postgres://user:pass@localhost:5432/idea_ai
+GEMINI_API_KEY=...
+TELEGRAM_BOT_TOKEN=...
+PORT=8787
+```
+
+### 4. Запуск
+```bash
+# Терминал 1 — API
+cd server && npm run build && npm run dev
+
+# Терминал 2 — Web
+npm run dev
+```
+
+---
+
+## Привязка Telegram к проекту
+
+1. Отправьте боту команду `/id`
+2. Скопируйте выданный **userId**
+3. В веб-интерфейсе откройте **Настройки** (шестерёнка) выбранного проекта
+4. Вставьте chat ID (число) в поле и добавьте — можно привязать несколько chat ID к одному проекту
+
+---
+
+## Важно
+
+- **GEMINI_API_KEY** попадает в клиентский бандл — используйте отдельный ключ для разработки.
+- `.env` не коммитится — см. `.env.example` как шаблон.
+
+---
+
+## Лицензия
+
+Приватный репозиторий.
